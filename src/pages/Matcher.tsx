@@ -11,6 +11,8 @@ interface MatchResult {
   careLevel: string;
   waterInterval: number;
   light: string;
+  growthPotential: number;
+  oxygenDensity: number;
   lastWatered?: string;
 }
 
@@ -24,6 +26,7 @@ export function Matcher() {
     pets: ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MatchResult[] | null>(null);
 
   const getCareIcon = (level: string, className: string = "h-3 w-3") => {
@@ -82,6 +85,7 @@ export function Matcher() {
 
   async function getRecommendation() {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await fetch("/api/botanist/recommend", {
         method: "POST",
@@ -91,6 +95,10 @@ export function Matcher() {
       if (!response.ok) throw new Error("Scientific analysis failed");
       const data: MatchResult[] = await response.json();
       
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("No suitable matches found. Try adjusting your parameters.");
+      }
+
       // Simulate last watered date (relative to today)
       const enhancedData = data.map(res => {
         const lastWateredDaysAgo = Math.floor(Math.random() * 5);
@@ -104,8 +112,9 @@ export function Matcher() {
 
       setResults(enhancedData);
       setStep(5);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err?.message || " botanical core connection failed");
     } finally {
       setIsLoading(false);
     }
@@ -165,6 +174,15 @@ export function Matcher() {
                 >
                     {currentStepData?.question}
                 </motion.h3>
+                {error && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-4 text-xs font-black uppercase tracking-widest text-red-500 bg-red-50 px-4 py-2 rounded-full inline-block"
+                  >
+                    {error}
+                  </motion.p>
+                )}
               </div>
 
               <div className="grid gap-4">
@@ -252,13 +270,13 @@ export function Matcher() {
                                 <div className="rounded-2xl bg-white p-3 border border-emerald-900/5">
                                     <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Growth Potential</span>
                                     <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-emerald-500 w-[85%]" />
+                                        <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${res.growthPotential}%` }} />
                                     </div>
                                 </div>
                                 <div className="rounded-2xl bg-white p-3 border border-emerald-900/5">
                                     <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Oxygen Density</span>
                                     <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-sky-500 w-[92%]" />
+                                        <div className="h-full bg-sky-500 transition-all duration-1000" style={{ width: `${res.oxygenDensity}%` }} />
                                     </div>
                                 </div>
                             </div>

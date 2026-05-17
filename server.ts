@@ -37,19 +37,24 @@ async function startServer() {
 
       const response = await chat.sendMessage({ message });
       res.json({ text: response.text });
-    } catch (error) {
-      console.error("Gemini Error:", error);
-      res.status(500).json({ error: "Failed to communicate with the Botanist AI." });
+    } catch (error: any) {
+      console.error("Gemini Chat Error:", error);
+      res.status(500).json({ 
+        error: "Failed to communicate with the Botanist AI.",
+        details: error?.message || String(error)
+      });
     }
   });
 
   app.post("/api/botanist/recommend", async (req, res) => {
     try {
+      console.log("Recommend Request:", req.body);
       const { answers } = req.body;
       const prompt = `Act as a senior botanist. Based on these environment details: ${JSON.stringify(answers)}, recommend 3 specific houseplants. 
       If 'pets' is 'restrictive', you MUST only recommend non-toxic, pet-safe plants.
       Consider light level '${answers.light}', humidity '${answers.humidity}', and care effort '${answers.experience}'.
-      Provide unique and highly suitable recommendations.`;
+      Provide unique and highly suitable recommendations.
+      For each plant, also provide 2 dynamic stats: 'growthPotential' and 'oxygenDensity' as integers between 60 and 98 based on the plant's characteristics.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -66,18 +71,24 @@ async function startServer() {
                 reason: { type: Type.STRING, description: "Specifically why this plant matches the user's answers" },
                 careLevel: { type: Type.STRING, enum: ["Easy", "Intermediate", "Expert"] },
                 waterInterval: { type: Type.NUMBER, description: "Recommended watering interval in days" },
-                light: { type: Type.STRING, description: "Specific light requirements for this plant" }
+                light: { type: Type.STRING, description: "Specific light requirements for this plant" },
+                growthPotential: { type: Type.NUMBER },
+                oxygenDensity: { type: Type.NUMBER }
               },
-              required: ["name", "scientificName", "reason", "careLevel", "waterInterval", "light"]
+              required: ["name", "scientificName", "reason", "careLevel", "waterInterval", "light", "growthPotential", "oxygenDensity"]
             }
           }
         },
       });
 
+      console.log("Recommend AI Response:", response.text);
       res.json(JSON.parse(response.text || "[]"));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Recommendation Error:", error);
-      res.status(500).json({ error: "The botanical index is currently inaccessible." });
+      res.status(500).json({ 
+        error: "The botanical index is currently inaccessible.",
+        details: error?.message || String(error)
+      });
     }
   });
 
@@ -119,19 +130,24 @@ async function startServer() {
       });
 
       res.json(JSON.parse(response.text || "{}"));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Tips Error:", error);
-      res.status(500).json({ error: "Failed to retrieve advanced botanical tips." });
+      res.status(500).json({ 
+        error: "Failed to retrieve advanced botanical tips.",
+        details: error?.message || String(error)
+      });
     }
   });
 
   app.post("/api/botanist/search", async (req, res) => {
     try {
+      console.log("Search Request:", req.body);
       const { query } = req.body;
       const prompt = `Act as a senior botanist. Provide technical details for the plant matching the query: '${query}'.
       If the query is ambiguous, pick the most common houseplant. 
       Return structured data including its common name, scientific name, typical water interval in days (integer), light requirements, humidity needs, and a short description.
-      Also include 3-4 detailed care tips and 2-3 troubleshooting issues with solutions.`;
+      Also include 3-4 detailed care tips and 2-3 troubleshooting issues with solutions.
+      Also provide 2 dynamic stats: 'growthPotential' and 'oxygenDensity' as integers between 60 and 98.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -149,6 +165,8 @@ async function startServer() {
               light: { type: Type.STRING },
               humidity: { type: Type.STRING },
               description: { type: Type.STRING },
+              growthPotential: { type: Type.NUMBER },
+              oxygenDensity: { type: Type.NUMBER },
               careTips: { 
                 type: Type.ARRAY, 
                 items: { type: Type.STRING }
@@ -165,15 +183,19 @@ async function startServer() {
                 }
               }
             },
-            required: ["name", "scientificName", "careLevel", "waterInterval", "category", "light", "humidity", "description", "careTips", "troubleshooting"]
+            required: ["name", "scientificName", "careLevel", "waterInterval", "category", "light", "humidity", "description", "careTips", "troubleshooting", "growthPotential", "oxygenDensity"]
           }
         },
       });
 
+      console.log("Search AI Response:", response.text);
       res.json(JSON.parse(response.text || "{}"));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Search Error:", error);
-      res.status(500).json({ error: "Failed to retrieve botanical data for this species." });
+      res.status(500).json({ 
+        error: "Failed to retrieve botanical data for this species.",
+        details: error?.message || String(error)
+      });
     }
   });
 

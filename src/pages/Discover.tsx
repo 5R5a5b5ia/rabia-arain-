@@ -13,6 +13,8 @@ interface PlantSearchResult {
   light: string;
   humidity: string;
   description: string;
+  growthPotential: number;
+  oxygenDensity: number;
   careTips: string[];
   troubleshooting: { issue: string; solution: string }[];
 }
@@ -177,6 +179,23 @@ export function Discover() {
                             <p className="text-xl font-medium text-zinc-600 leading-relaxed mb-8 italic">
                                 "{result.description}"
                             </p>
+
+                            <div className="mb-10 grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl bg-zinc-50 p-3 border border-emerald-900/5">
+                                    <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Growth Potential</span>
+                                    <div className="h-1 w-full bg-zinc-200 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${result.growthPotential}%` }} />
+                                    </div>
+                                    <div className="mt-1 text-[10px] font-black text-emerald-900">{result.growthPotential}%</div>
+                                </div>
+                                <div className="rounded-2xl bg-zinc-50 p-3 border border-emerald-900/5">
+                                    <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Oxygen Density</span>
+                                    <div className="h-1 w-full bg-zinc-200 rounded-full overflow-hidden">
+                                        <div className="h-full bg-sky-500 transition-all duration-1000" style={{ width: `${result.oxygenDensity}%` }} />
+                                    </div>
+                                    <div className="mt-1 text-[10px] font-black text-sky-900">{result.oxygenDensity}%</div>
+                                </div>
+                            </div>
 
                             <div className="mb-10 space-y-4 px-6 py-8 rounded-[2rem] bg-emerald-50/50 border border-emerald-100/30">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-4 flex items-center gap-2 px-1">
