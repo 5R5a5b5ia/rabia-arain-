@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Sparkles, AlertCircle, CheckCircle2, Trees, Droplets } from "lucide-react";
+import { ArrowRight, Sparkles, AlertCircle, CheckCircle2, Trees, Droplets, Leaf, Sprout, Plus } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 
 interface MatchResult {
@@ -13,6 +13,7 @@ interface MatchResult {
 }
 
 export function Matcher() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
     light: "",
@@ -22,6 +23,14 @@ export function Matcher() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<MatchResult[] | null>(null);
+
+  const getCareIcon = (level: string, className: string = "h-3 w-3") => {
+    const norm = level?.toLowerCase() || "";
+    if (norm.includes("easy")) return <Sprout className={className} />;
+    if (norm.includes("intermediate")) return <Leaf className={className} />;
+    if (norm.includes("expert")) return <Trees className={className} />;
+    return <Sprout className={className} />;
+  };
 
   const steps = [
     {
@@ -100,6 +109,20 @@ export function Matcher() {
     }
   }
 
+  const addToTracker = (plant: MatchResult) => {
+    const existing = JSON.parse(localStorage.getItem('plants') || '[]');
+    localStorage.setItem('plants', JSON.stringify([
+      ...existing,
+      { 
+        id: Date.now(), 
+        name: plant.name, 
+        interval: plant.careLevel === 'Expert' ? 3 : plant.careLevel === 'Intermediate' ? 7 : 14, 
+        lastWatered: plant.lastWatered || new Date().toISOString().split('T')[0] 
+      }
+    ]));
+    navigate('/tracker');
+  };
+
   const currentStepData = steps.find(s => s.id === step);
 
   return (
@@ -123,13 +146,31 @@ export function Matcher() {
               className="space-y-8"
             >
               <div>
-                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-emerald-600 mb-2">{currentStepData?.title}</h2>
-                <h3 className="text-3xl font-extrabold text-emerald-900 tracking-tight">{currentStepData?.question}</h3>
+                <motion.h2 
+                    key={`title-${step}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm font-black uppercase tracking-[0.3em] text-emerald-600 mb-2"
+                >
+                    {currentStepData?.title}
+                </motion.h2>
+                <motion.h3 
+                    key={`q-${step}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-3xl font-extrabold text-emerald-900 tracking-tight"
+                >
+                    {currentStepData?.question}
+                </motion.h3>
               </div>
 
               <div className="grid gap-4">
-                {currentStepData?.options.map(opt => (
-                  <button
+                {currentStepData?.options.map((opt, i) => (
+                  <motion.button
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
                     key={opt.value}
                     onClick={() => {
                         setAnswers(prev => ({ ...prev, [currentStepData.field]: opt.value }));
@@ -148,10 +189,10 @@ export function Matcher() {
                             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{opt.desc}</span>
                         </div>
                     </div>
-                    {(answers[currentStepData.field as keyof typeof answers] === opt.value) && (
+                    {answers[currentStepData.field as keyof typeof answers] === opt.value && (
                         <CheckCircle2 className="h-6 w-6 text-emerald-600 animate-in zoom-in relative z-10" />
                     )}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 
@@ -159,7 +200,7 @@ export function Matcher() {
                 <button
                   onClick={() => setStep(prev => Math.max(1, prev - 1))}
                   disabled={step === 1 || isLoading}
-                  className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-emerald-900 disabled:opacity-0 transition-all"
+                  className="text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-emerald-900 disabled:opacity-0 transition-all font-sans"
                 >
                   Back
                 </button>
@@ -184,51 +225,62 @@ export function Matcher() {
             >
                 <div className="text-center mb-8">
                     <Sparkles className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
-                    <h2 className="text-3xl font-black text-emerald-900 tracking-tighter">YOUR AI RECOMMENDATIONS</h2>
+                    <h2 className="text-3xl font-black text-emerald-900 tracking-tighter uppercase">AI Biological Matches</h2>
+                    <p className="text-sm font-medium text-zinc-500 mt-2">Specimens optimized for your local environmental profile.</p>
                 </div>
 
                 <div className="grid gap-6">
                     {results?.map((res, i) => (
-                        <div key={i} className="rounded-3xl border border-emerald-900/5 bg-zinc-50 p-6 shadow-sm">
+                        <div key={i} className="rounded-3xl border border-emerald-900/5 bg-zinc-50 p-6 shadow-sm group">
                             <div className="mb-4 flex items-center justify-between">
-                                <h3 className="text-xl font-extrabold text-emerald-900 tracking-tight">{res.name}</h3>
-                                <span className="rounded-full bg-emerald-900 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest">
+                                <h3 className="text-2xl font-extrabold text-emerald-900 tracking-tight">{res.name}</h3>
+                                <div className="flex items-center gap-2 rounded-full bg-emerald-900 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest">
+                                    {getCareIcon(res.careLevel, "h-3 w-3")}
                                     {res.careLevel}
-                                </span>
+                                </div>
                             </div>
-                            <p className="text-sm font-medium text-zinc-600 leading-relaxed mb-4 italic">
+                            <p className="text-base font-medium text-zinc-600 leading-relaxed mb-6 italic">
                                 "{res.reason}"
                             </p>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">
-                                    <Trees className="h-3 w-3" />
-                                    Ideal Light: {res.light}
-                                </div>
-                                {res.lastWatered && (
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-sky-600 uppercase tracking-[0.2em]">
-                                        <Droplets className="h-3 w-3" />
-                                        Last Hydration: {res.lastWatered}
+                            <div className="flex items-center justify-between border-t border-zinc-100 pt-6">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">
+                                        <Trees className="h-3 w-3" />
+                                        Ideal Light: {res.light}
                                     </div>
-                                )}
+                                    {res.lastWatered && (
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-sky-600 uppercase tracking-[0.2em]">
+                                            <Droplets className="h-3 w-3" />
+                                            Last Hydration: {res.lastWatered}
+                                        </div>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={() => addToTracker(res)}
+                                    className="flex items-center gap-2 rounded-full bg-white border border-emerald-900/10 px-6 py-3 text-xs font-black uppercase tracking-widest text-emerald-900 shadow-sm transition-all hover:bg-emerald-900 hover:text-white"
+                                >
+                                    <Plus className="h-3 w-3" />
+                                    Add To Tracker
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <div className="pt-8 flex justify-center gap-4">
+                <div className="pt-8 flex flex-col sm:flex-row justify-center gap-4">
                     <button 
                         onClick={() => {
                             setStep(1);
                             setAnswers({ light: "", experience: "", environment: "", pets: "" });
                             setResults(null);
                         }}
-                        className="rounded-full border-2 border-emerald-900/10 px-8 py-4 text-sm font-bold text-emerald-900"
+                        className="rounded-full border-2 border-emerald-900/10 px-8 py-4 text-sm font-black uppercase tracking-widest text-emerald-900 hover:bg-zinc-50 transition-colors"
                     >
                         Reset Journey
                     </button>
                     <Link 
                         to="/discover"
-                        className="rounded-full bg-emerald-900 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-emerald-900/20"
+                        className="rounded-full bg-emerald-900 px-8 py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-emerald-900/20 hover:bg-emerald-800 transition-all text-center"
                     >
                         Browse All Records
                     </Link>

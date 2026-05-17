@@ -220,7 +220,7 @@ export function Tracker() {
         {plants.length === 0 && (
           <div className="col-span-full flex h-64 flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-emerald-900/5 text-zinc-300">
              <Droplets className="mb-4 h-12 w-12 opacity-20" />
-             <p className="max-w-[200px] text-center font-bold">No biological telemetry active. Start tracking a new speciment.</p>
+             <p className="max-w-[200px] text-center font-bold">No biological telemetry active. Start tracking a new specimen.</p>
           </div>
         )}
       </div>
@@ -240,29 +240,37 @@ function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWate
   const isOverdue = diffDays < 0;
   const isDueToday = diffDays === 0;
 
-  // Calculate progress percentage
+// Calculate progress percentage
   const totalDays = plant.interval;
   const elapsedDays = Math.max(0, totalDays - diffDays);
   const progressPercent = Math.min(100, (elapsedDays / totalDays) * 100);
+  const hydrationLevel = Math.max(0, 100 - Math.round(progressPercent));
 
   return (
     <motion.div 
       layout
       className={cn(
         "group relative overflow-hidden rounded-[2rem] border border-emerald-900/5 bg-white transition-all hover:shadow-xl hover:shadow-emerald-900/5",
-        view === "list" ? "flex items-center justify-between gap-8 p-6" : "flex flex-col p-6"
+        view === "list" ? "flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 p-6" : "flex flex-col p-6"
       )}
     >
       <div className={cn(
           "flex items-center gap-4",
-          view === "list" ? "flex-1" : "mb-6"
+          view === "list" ? "md:flex-1 w-full" : "mb-6"
       )}>
-        <div className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner",
-            isOverdue ? "bg-rose-50 text-rose-600" : isDueToday ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
-        )}>
+        <motion.div 
+            animate={{ 
+                backgroundColor: isOverdue ? "#fff1f2" : isDueToday ? "#fffbeb" : "#ecfdf5",
+                color: isOverdue ? "#e11d48" : isDueToday ? "#d97706" : "#059669",
+                scale: [1, 1.05, 1]
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner shrink-0"
+            )}
+        >
           {isOverdue ? "⚠️" : "🌱"}
-        </div>
+        </motion.div>
         <div>
           <h3 className="text-xl font-extrabold text-emerald-900 leading-none tracking-tight">{plant.name}</h3>
           <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-zinc-400">
@@ -276,37 +284,67 @@ function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWate
       </div>
 
       <div className={cn(
-          "space-y-6",
-          view === "list" ? "flex items-center gap-8 space-y-0" : ""
+          "w-full space-y-6",
+          view === "list" ? "flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8 lg:space-y-0" : ""
       )}>
         {/* Next Watering Visualization */}
-        <div className={cn("space-y-2", view === "list" ? "flex-1" : "")}>
-          <div className="flex items-center justify-between">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400">Hydration Levels</span>
-            <span className={cn(
-              "text-[9px] font-black uppercase",
-              isOverdue ? "text-rose-500" : isDueToday ? "text-amber-500" : "text-emerald-500"
-            )}>
-              {Math.max(0, 100 - Math.round(progressPercent))}% Remaining
-            </span>
+        <div className={cn("flex items-center gap-6", view === "list" ? "lg:flex-1" : "py-4")}>
+          <div className="relative h-16 w-12 shrink-0">
+             <div className="absolute inset-0 flex items-center justify-center">
+                <svg viewBox="0 0 24 32" className="h-full w-full fill-white stroke-zinc-100 stroke-2">
+                    <path d="M12 2C12 2 4 11 4 18C4 22.4183 7.58172 26 12 26C16.4183 26 20 22.4183 20 18C20 11 12 2 12 2Z" />
+                </svg>
+             </div>
+             <div className={cn("absolute inset-0 flex items-center justify-center overflow-hidden", `[clip-path:url(#dropletClip-${plant.id})]`)}>
+                <svg viewBox="0 0 24 32" className="h-full w-full">
+                    <defs>
+                        <clipPath id={`dropletClip-${plant.id}`}>
+                            <path d="M12 2C12 2 4 11 4 18C4 22.4183 7.58172 26 12 26C16.4183 26 20 22.4183 20 18C20 11 12 2 12 2Z" />
+                        </clipPath>
+                    </defs>
+                    <motion.rect 
+                        initial={{ height: "0%" }}
+                        animate={{ height: `${hydrationLevel}%` }}
+                        transition={{ type: "spring", bounce: 0, duration: 1.5 }}
+                        x="0" 
+                        y={32 - (32 * (hydrationLevel / 100))}
+                        width="24" 
+                        height="32" 
+                        className={cn(
+                            "transition-colors",
+                            hydrationLevel < 20 ? "fill-rose-400" : hydrationLevel < 50 ? "fill-amber-400" : "fill-blue-400"
+                        )}
+                    />
+                </svg>
+             </div>
+             <div className="absolute inset-0 flex items-center justify-center">
+                 <span className="text-[10px] font-black text-white mix-blend-difference">{hydrationLevel}%</span>
+             </div>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${100 - progressPercent}%` }}
-              className={cn(
-                "h-full transition-colors",
-                isOverdue ? "bg-rose-500" : isDueToday ? "bg-amber-500" : "bg-emerald-500"
-              )}
-            />
-          </div>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-zinc-500">
-             <Calendar className="h-3 w-3 opacity-30" />
-             Next Data Sync: {nextDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+
+          <div className="flex-1 space-y-1">
+             <span className="block text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400">Biological Reserves</span>
+             <div className="flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${hydrationLevel}%` }}
+                        className={cn(
+                            "h-full transition-colors",
+                            hydrationLevel < 20 ? "bg-rose-500" : hydrationLevel < 50 ? "bg-amber-500" : "bg-blue-500"
+                        )}
+                    />
+                </div>
+             </div>
+             <p className="text-[9px] font-bold text-zinc-500 flex items-center gap-1">
+                <Calendar className="h-2.5 w-2.5 opacity-30" />
+                Next refresh: {nextDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+             </p>
           </div>
         </div>
 
-        <div className={cn("grid grid-cols-2 gap-4", view === "list" ? "mx-8 grow-0 shrink-0 w-64" : "mb-6")}>
+        <div className={cn("grid grid-cols-2 gap-4", view === "list" ? "lg:mx-8 grow-0 shrink-0 lg:w-64" : "mb-6")}>
+
             <div className="rounded-2xl bg-zinc-50 p-3 border border-zinc-100">
                 <span className="block text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-1">Telemetry Status</span>
                 <span className={cn(
@@ -344,11 +382,15 @@ function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWate
                   "bg-emerald-900 text-white shadow-emerald-900/10 hover:bg-emerald-800"
                 )}
             >
-                <Droplets className="h-3.4 w-3.4" />
+                <Droplets className="h-3.5 w-3.5" />
                 Refresh
             </button>
             <button 
-                onClick={onDelete}
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to remove the ${plant.name} specimen from your records?`)) {
+                    onDelete();
+                  }
+                }}
                 className="rounded-xl border border-zinc-100 p-4 text-zinc-300 transition-all hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200"
             >
                 <Trash2 className="h-4 w-4" />

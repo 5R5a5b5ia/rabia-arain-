@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -57,14 +57,14 @@ async function startServer() {
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: "array",
+            type: Type.ARRAY,
             items: {
-              type: "object",
+              type: Type.OBJECT,
               properties: {
-                name: { type: "string", description: "The common name of the plant" },
-                reason: { type: "string", description: "Specifically why this plant matches the user's answers" },
-                careLevel: { type: "string", enum: ["Easy", "Intermediate", "Expert"] },
-                light: { type: "string", description: "Specific light requirements for this plant" }
+                name: { type: Type.STRING, description: "The common name of the plant" },
+                reason: { type: Type.STRING, description: "Specifically why this plant matches the user's answers" },
+                careLevel: { type: Type.STRING, enum: ["Easy", "Intermediate", "Expert"] },
+                light: { type: Type.STRING, description: "Specific light requirements for this plant" }
               },
               required: ["name", "reason", "careLevel", "light"]
             }
@@ -91,20 +91,20 @@ async function startServer() {
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: "object",
+            type: Type.OBJECT,
             properties: {
               careTips: { 
-                type: "array", 
-                items: { type: "string" },
+                type: Type.ARRAY, 
+                items: { type: Type.STRING },
                 description: "3-4 detailed care instructions"
               },
               troubleshooting: {
-                type: "array",
+                type: Type.ARRAY,
                 items: {
-                  type: "object",
+                  type: Type.OBJECT,
                   properties: {
-                    issue: { type: "string", description: "Common problem" },
-                    solution: { type: "string", description: "How to fix it" }
+                    issue: { type: Type.STRING, description: "Common problem" },
+                    solution: { type: Type.STRING, description: "How to fix it" }
                   },
                   required: ["issue", "solution"]
                 },
@@ -120,6 +120,58 @@ async function startServer() {
     } catch (error) {
       console.error("Tips Error:", error);
       res.status(500).json({ error: "Failed to retrieve advanced botanical tips." });
+    }
+  });
+
+  app.post("/api/botanist/search", async (req, res) => {
+    try {
+      const { query } = req.body;
+      const prompt = `Act as a senior botanist. Provide technical details for the plant matching the query: '${query}'.
+      If the query is ambiguous, pick the most common houseplant. 
+      Return structured data including its common name, scientific name, typical water interval in days (integer), light requirements, humidity needs, and a short description.
+      Also include 3-4 detailed care tips and 2-3 troubleshooting issues with solutions.`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              scientificName: { type: Type.STRING },
+              waterInterval: { type: Type.NUMBER, description: "Suggested interval in days for watering" },
+              category: { type: Type.STRING, enum: ["Succulents", "Leafy", "Flowering", "Trees", "Cacti"] },
+              careLevel: { type: Type.STRING, enum: ["Easy", "Intermediate", "Expert"] },
+              light: { type: Type.STRING },
+              humidity: { type: Type.STRING },
+              description: { type: Type.STRING },
+              careTips: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING }
+              },
+              troubleshooting: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    issue: { type: Type.STRING },
+                    solution: { type: Type.STRING }
+                  },
+                  required: ["issue", "solution"]
+                }
+              }
+            },
+            required: ["name", "scientificName", "careLevel", "waterInterval", "category", "light", "humidity", "description", "careTips", "troubleshooting"]
+          }
+        },
+      });
+
+      res.json(JSON.parse(response.text || "{}"));
+    } catch (error) {
+      console.error("Search Error:", error);
+      res.status(500).json({ error: "Failed to retrieve botanical data for this species." });
     }
   });
 
