@@ -58,7 +58,7 @@ async function startServer() {
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -81,8 +81,13 @@ async function startServer() {
         },
       });
 
-      console.log("Recommend AI Response:", response.text);
-      res.json(JSON.parse(response.text || "[]"));
+      console.log("Recommend AI Response text:", response.text);
+      if (!response.text) {
+        throw new Error("AI returned empty response");
+      }
+      const data = JSON.parse(response.text);
+      console.log("Parsed Recommendation data:", data);
+      res.json(data);
     } catch (error: any) {
       console.error("Recommendation Error:", error);
       res.status(500).json({ 
@@ -100,7 +105,7 @@ async function startServer() {
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -129,7 +134,8 @@ async function startServer() {
         },
       });
 
-      res.json(JSON.parse(response.text || "{}"));
+      const data = JSON.parse(response.text || "{}");
+      res.json(data);
     } catch (error: any) {
       console.error("Tips Error:", error);
       res.status(500).json({ 
@@ -151,7 +157,7 @@ async function startServer() {
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -188,8 +194,13 @@ async function startServer() {
         },
       });
 
-      console.log("Search AI Response:", response.text);
-      res.json(JSON.parse(response.text || "{}"));
+      console.log("Search AI Response text:", response.text);
+      if (!response.text) {
+        throw new Error("AI returned empty response");
+      }
+      const data = JSON.parse(response.text);
+      console.log("Parsed Search data:", data);
+      res.json(data);
     } catch (error: any) {
       console.error("Search Error:", error);
       res.status(500).json({ 
