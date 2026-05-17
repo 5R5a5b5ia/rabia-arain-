@@ -65,7 +65,7 @@ export function BotanistAI() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl shadow-emerald-900/20"
+            className="flex h-[500px] w-[calc(100vw-2rem)] sm:w-[350px] flex-col overflow-hidden rounded-2xl border border-emerald-900/10 bg-white shadow-2xl shadow-emerald-900/20"
           >
             <div className="flex items-center justify-between bg-emerald-900 px-4 py-3 text-white">
               <div className="flex items-center gap-2">

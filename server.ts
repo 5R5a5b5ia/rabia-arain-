@@ -62,11 +62,13 @@ async function startServer() {
               type: Type.OBJECT,
               properties: {
                 name: { type: Type.STRING, description: "The common name of the plant" },
+                scientificName: { type: Type.STRING, description: "The botanical name" },
                 reason: { type: Type.STRING, description: "Specifically why this plant matches the user's answers" },
                 careLevel: { type: Type.STRING, enum: ["Easy", "Intermediate", "Expert"] },
+                waterInterval: { type: Type.NUMBER, description: "Recommended watering interval in days" },
                 light: { type: Type.STRING, description: "Specific light requirements for this plant" }
               },
-              required: ["name", "reason", "careLevel", "light"]
+              required: ["name", "scientificName", "reason", "careLevel", "waterInterval", "light"]
             }
           }
         },
@@ -178,7 +180,10 @@ async function startServer() {
   // Vite Middleware / Static Files
   if (!IS_PROD) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

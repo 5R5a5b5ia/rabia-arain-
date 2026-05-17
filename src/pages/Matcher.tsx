@@ -6,8 +6,10 @@ import { cn } from "@/src/lib/utils";
 
 interface MatchResult {
   name: string;
+  scientificName: string;
   reason: string;
   careLevel: string;
+  waterInterval: number;
   light: string;
   lastWatered?: string;
 }
@@ -18,7 +20,7 @@ export function Matcher() {
   const [answers, setAnswers] = useState({
     light: "",
     experience: "",
-    environment: "",
+    humidity: "",
     pets: ""
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -116,7 +118,7 @@ export function Matcher() {
       { 
         id: Date.now(), 
         name: plant.name, 
-        interval: plant.careLevel === 'Expert' ? 3 : plant.careLevel === 'Intermediate' ? 7 : 14, 
+        interval: plant.waterInterval || (plant.careLevel === 'Expert' ? 3 : plant.careLevel === 'Intermediate' ? 7 : 14), 
         lastWatered: plant.lastWatered || new Date().toISOString().split('T')[0] 
       }
     ]));
@@ -231,9 +233,12 @@ export function Matcher() {
 
                 <div className="grid gap-6">
                     {results?.map((res, i) => (
-                        <div key={i} className="rounded-3xl border border-emerald-900/5 bg-zinc-50 p-6 shadow-sm group">
+                        <div key={i} className="rounded-3xl border border-emerald-900/5 bg-zinc-50 p-6 shadow-sm group hover:shadow-md transition-all">
                             <div className="mb-4 flex items-center justify-between">
-                                <h3 className="text-2xl font-extrabold text-emerald-900 tracking-tight">{res.name}</h3>
+                                <div>
+                                    <h3 className="text-2xl font-extrabold text-emerald-900 tracking-tight">{res.name}</h3>
+                                    <p className="text-[10px] font-bold italic text-emerald-600/50 uppercase tracking-widest">{res.scientificName}</p>
+                                </div>
                                 <div className="flex items-center gap-2 rounded-full bg-emerald-900 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest">
                                     {getCareIcon(res.careLevel, "h-3 w-3")}
                                     {res.careLevel}
@@ -242,18 +247,32 @@ export function Matcher() {
                             <p className="text-base font-medium text-zinc-600 leading-relaxed mb-6 italic">
                                 "{res.reason}"
                             </p>
+                            
+                            <div className="mb-6 grid grid-cols-2 gap-3">
+                                <div className="rounded-2xl bg-white p-3 border border-emerald-900/5">
+                                    <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Growth Potential</span>
+                                    <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 w-[85%]" />
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl bg-white p-3 border border-emerald-900/5">
+                                    <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-400 mb-1">Oxygen Density</span>
+                                    <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-sky-500 w-[92%]" />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex items-center justify-between border-t border-zinc-100 pt-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">
                                         <Trees className="h-3 w-3" />
                                         Ideal Light: {res.light}
                                     </div>
-                                    {res.lastWatered && (
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-sky-600 uppercase tracking-[0.2em]">
-                                            <Droplets className="h-3 w-3" />
-                                            Last Hydration: {res.lastWatered}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2 text-[10px] font-black text-sky-600 uppercase tracking-[0.2em]">
+                                        <Droplets className="h-3 w-3" />
+                                        Water Cycle: Every {res.waterInterval} days
+                                    </div>
                                 </div>
                                 <button 
                                     onClick={() => addToTracker(res)}
@@ -271,7 +290,7 @@ export function Matcher() {
                     <button 
                         onClick={() => {
                             setStep(1);
-                            setAnswers({ light: "", experience: "", environment: "", pets: "" });
+                            setAnswers({ light: "", experience: "", humidity: "", pets: "" });
                             setResults(null);
                         }}
                         className="rounded-full border-2 border-emerald-900/10 px-8 py-4 text-sm font-black uppercase tracking-widest text-emerald-900 hover:bg-zinc-50 transition-colors"

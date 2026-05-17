@@ -40,25 +40,46 @@ export function Discover() {
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState<PlantSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    const saved = localStorage.getItem('recent_searches');
+    return saved ? JSON.parse(saved) : ["Monstera", "Snake Plant", "Fiddle Leaf Fig"];
+  });
   const navigate = useNavigate();
 
-  async function handleSearch(e?: React.FormEvent) {
-    if (e) e.preventDefault();
-    if (!query.trim()) return;
+  async function handleSearch(input?: string | React.FormEvent) {
+    let searchTerm = query.trim();
+    if (typeof input === 'string') {
+        searchTerm = input;
+        setQuery(input);
+    } else if (input) {
+        input.preventDefault();
+    }
+    
+    if (!searchTerm) return;
 
     setIsSearching(true);
     setError(null);
+    setResult(null);
     try {
       const res = await fetch("/api/botanist/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim() })
+        body: JSON.stringify({ query: searchTerm })
       });
       if (!res.ok) throw new Error("Botanical cloud connection failed");
       const data = await res.json();
+      
+      if (!data.name || !data.careTips) {
+        throw new Error("Specimen data incomplete");
+      }
+
       setResult(data);
+      
+      const updatedSearches = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 5);
+      setRecentSearches(updatedSearches);
+      localStorage.setItem('recent_searches', JSON.stringify(updatedSearches));
     } catch (err) {
-      setError("Failed to retrieve botanical data for this species. Please try a different specimen name.");
+      setError("Failed to retrieve botanical data for this species. Our intelligence suggests this specimen might be rare or non-existent in the commercial index.");
       console.error(err);
     } finally {
       setIsSearching(false);
@@ -114,6 +135,19 @@ export function Discover() {
                 {error}
             </motion.p>
         )}
+
+        {/* Recent Searches */}
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+            {recentSearches.map((s, i) => (
+                <button
+                    key={i}
+                    onClick={() => handleSearch(s)}
+                    className="rounded-full bg-zinc-50 border border-zinc-100 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all"
+                >
+                    {s}
+                </button>
+            ))}
+        </div>
       </div>
 
       {/* Result Section */}

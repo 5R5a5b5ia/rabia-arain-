@@ -228,7 +228,7 @@ export function Tracker() {
   );
 }
 
-function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWater: () => void, onDelete: () => void, view: "grid" | "list", key?: React.Key }) {
+function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWater: () => void, onDelete: () => void, view: "grid" | "list", key?: any }) {
   const lastDate = new Date(plant.lastWatered);
   const nextDate = new Date(lastDate);
   nextDate.setDate(lastDate.getDate() + plant.interval);
@@ -295,7 +295,10 @@ function PlanCard({ plant, onWater, onDelete, view }: { plant: UserPlant, onWate
                     <path d="M12 2C12 2 4 11 4 18C4 22.4183 7.58172 26 12 26C16.4183 26 20 22.4183 20 18C20 11 12 2 12 2Z" />
                 </svg>
              </div>
-             <div className={cn("absolute inset-0 flex items-center justify-center overflow-hidden", `[clip-path:url(#dropletClip-${plant.id})]`)}>
+             <div 
+                className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                style={{ clipPath: `url(#dropletClip-${plant.id})` }}
+             >
                 <svg viewBox="0 0 24 32" className="h-full w-full">
                     <defs>
                         <clipPath id={`dropletClip-${plant.id}`}>
